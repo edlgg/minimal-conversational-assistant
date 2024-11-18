@@ -1,0 +1,6 @@
+<!-- user_message -->
+<div class="pl-4 py-2 bg-blue-500 text-white rounded-lg mb-2"
+hx-post="/assistant_response?message={{data['message']}}" hx-trigger="revealed" hx-target="#chat-box" hx-swap="beforeend"
+>
+    <b>You:</b> {{ data["message"] }}
+</div>

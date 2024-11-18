@@ -1,0 +1,12 @@
+Jinja2
+fastapi
+pydantic
+uvicorn
+python-multipart
+langchain
+langchain_core
+langchain-google-genai
+langchain-ollama
+yfinance
+yfinance[optional]
+plotly
