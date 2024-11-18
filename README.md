@@ -10,6 +10,9 @@ Bootstrap template for chatbot UI with llm based conversational assistants using
 - DaisyUI
 - Plotly
 
+![Description of the Image](images/chat.png)
+
+
 ## Set Up
 
 ```python

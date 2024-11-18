@@ -6,7 +6,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 
-from backend.assistants.assistants_catalog import assistants_catalog
+from src.backend.assistants.assistants_catalog import assistants_catalog
 
 current_directory = Path(__file__).parent
 
