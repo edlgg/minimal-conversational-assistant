@@ -1,30 +1,53 @@
 from pydantic import BaseModel, Field, SecretStr
 from typing import List, Optional, Dict, Any, Tuple
 from abc import ABC, abstractmethod
-from backend.assistants.assistant_types import AssistantState, Message
-from langchain_google_genai import ChatGoogleGenerativeAI
 import os
+from datetime import datetime, timezone
+
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import BaseMessage, AIMessage, HumanMessage
+
 # from langchain_openai import ChatOpenAI
 # from langchain_ollama import ChatOllama
 # from ollama import AsyncClient
 
+from backend.db import BaseDBModel
+
 foundational_llms = {
-    "gemini": ChatGoogleGenerativeAI(temperature=0, model="gemini-1.5-pro-latest", api_key=SecretStr(os.environ["GOOGLE_API_KEY"]))
+    "gemini": ChatGoogleGenerativeAI(
+        temperature=0,
+        model="gemini-1.5-pro-latest",
+        api_key=SecretStr(os.environ["GOOGLE_API_KEY"]),
+    )
     # open_ai_4o = ChatOpenAI(temperature=0, model="gpt-4o", api_key=os.environ["OPENAI_API_KEY"])
     # ollama_llama_31_8: ChatOllama(
-#     model="llama3.1",
-#     temperature=0,
-# )
+    #     model="llama3.1",
+    #     temperature=0,
+    # )
 }
+
+
+class Message(BaseModel):
+    sent_by: str  # assistant, correspondent
+    text: str
+    llm_name: str
+    llm_model: str
+    llm_temperature: float
+    created_at: datetime = datetime.now(timezone.utc)
+
+
+class AssistantState(BaseDBModel):
+    messages: List[Message] = Field(default_factory=list)
+
 
 class AssistantConfig(BaseModel):
     llm_model: str = "gemini"
     llm_temperature: float = 0.0
 
+
 class BaseAssistant(ABC, BaseModel):
-    name: str # ?
+    name: str  # ?
     config: AssistantConfig = AssistantConfig()
     tools: List[Any] = Field(default_factory=list)
 
@@ -41,11 +64,11 @@ class BaseAssistant(ABC, BaseModel):
             text=user_input,
             llm_name="",
             llm_model="",
-            llm_temperature=0.0
+            llm_temperature=0.0,
         )
         state.messages.append(correspondent_message)
         response = await self.generate_response(state)
-        
+
         assistant_message = Message(
             sent_by="assistant",
             text=response,
@@ -62,19 +85,18 @@ class BaseAssistant(ABC, BaseModel):
     async def generate_response(self, state: AssistantState) -> str:
         """Generate response by querying the model or processing input. Defined in subclass."""
         raise NotImplementedError
-    
+
     @abstractmethod
     async def handle_tool_call(self, response, function_call, tool_calls) -> str:
         raise NotImplementedError("base_assistant shouldnt trigger tools")
-    
-    async def llm_query(self, instruction: str, messages: list[Message], llm_name) -> BaseMessage:
+
+    async def llm_query(
+        self, instruction: str, messages: list[Message], llm_name
+    ) -> BaseMessage:
         llm = foundational_llms[llm_name]
         if self.tools:
             llm = llm.bind_tools(self.tools, tool_choice="auto")
-        system_inst = (
-            "system",
-            "Inst: {instruction}."
-        )
+        system_inst = ("system", "Inst: {instruction}.")
         prompt = ChatPromptTemplate.from_messages(
             [
                 system_inst,
@@ -82,19 +104,21 @@ class BaseAssistant(ABC, BaseModel):
             ]
         )
         chain = prompt | llm
-        chat_history = self.get_chat_history(messages, 1) # Switched to 1 becasue charts are very long. Might need to filer ?! or summarize ! charts.
+        chat_history = self.get_chat_history(
+            messages, 1
+        )  # Switched to 1 becasue charts are very long. Might need to filer ?! or summarize ! charts. TODO: Summarize
         prompt = {
             "instruction": instruction,
             "chat_history": chat_history,
         }
         response = chain.invoke(prompt)
         return response
-    
+
     def get_chat_history(self, messages: list[Message], n: int) -> list[BaseMessage]:
         last_message = messages[-1]
         if not last_message.sent_by == "correspondent":
             raise ValueError("Last message must be from the correspondent")
-        
+
         formated_messages = []
         for message in messages[-n:]:
             if message.sent_by == "assistant":

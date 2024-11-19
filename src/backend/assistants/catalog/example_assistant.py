@@ -6,8 +6,7 @@ import plotly.graph_objects as go
 import yfinance as yf
 from datetime import datetime, timedelta, timezone
 
-from backend.assistants.base_assistant import BaseAssistant
-from backend.assistants.assistant_types import AssistantState
+from backend.assistants.base_assistant import BaseAssistant, AssistantState
 
 def make_line_chart(
     df: pd.DataFrame,
@@ -54,7 +53,7 @@ def make_line_chart(
 
     return html
 
-class PriceChartPrinter(BaseModel):
+class PriceChartPrinterTool(BaseModel):
     """Tool to start workflow to make a reservation.
     Use when the user wants to make a new reservation or when the user has selected a restaurant.
     """
@@ -65,7 +64,7 @@ class PriceChartPrinter(BaseModel):
 class FinanceSupportAssistant(BaseAssistant):
     name: str = 'Finance Support Assistant'
     tools: list = [
-        PriceChartPrinter,
+        PriceChartPrinterTool,
     ]
 
     async def generate_response(self, state: AssistantState) -> str:
@@ -86,12 +85,12 @@ class FinanceSupportAssistant(BaseAssistant):
         """Handle tool call."""
         arguments_str = function_call["arguments"]
         arguments = literal_eval(arguments_str)
-        if function_call["name"] == PriceChartPrinter.__name__:
+        if function_call["name"] == PriceChartPrinterTool.__name__:
             return await self.price_chart_printer(arguments["symbol"])
         raise NotImplementedError(f"Function call {function_call} not implemented.")
 
     async def price_chart_printer(self, symbol: str) -> str:
-        """Handle PriceChartPrinter tool call."""
+        """Handle PriceChartPrinterTool tool call."""
 
         # apple = yf.Ticker("AAPL")
         # print(apple.info)

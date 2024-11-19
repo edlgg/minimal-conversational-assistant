@@ -34,7 +34,7 @@ async def user_message(request: Request, message: str = Form(...)) -> HTMLRespon
 async def chat(request: Request, message) -> HTMLResponse:
     assistant_keys = list(assistants_catalog.keys())
     assistant = assistants_catalog[assistant_keys[0]]
-    response = await assistant().call("42", message)
+    response = await assistant().call(conversation_id="42", user_input=message)
     data = {
         "message": response
     }

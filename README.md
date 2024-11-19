@@ -26,7 +26,7 @@ pip install -r requirements.txt
 ```python
 source .venv/bin/activate
 export PYTHONPATH="$PYTHONPATH:$(pwd)/src"
-python src/ui/main.py
+python src/frontend/main.py
 ```
 
 ## References
